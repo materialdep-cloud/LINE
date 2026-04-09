@@ -14,10 +14,20 @@
     textarea { width: 100%; height: 220px; margin-top: 10px; }
     select { padding: 4px; }
 
+    /* ⭐ 只新增這段：放大上傳按鈕 */
+    #upload {
+      font-size: 20px;
+      padding: 12px 16px;
+      border: 2px solid #444;
+      border-radius: 8px;
+      background: #f5f5f5;
+      cursor: pointer;
+    }
+
     .factory1 { background: #ffcdd2; }
     .factory2 { background: #c8e6c9; }
     .greenDriverFactory1 { background: #fff59d; }
-    .factory2Green { background: #bbdefb; } /* 🔵 新增 */
+    .factory2Green { background: #bbdefb; }
     .selfsend { background: #e0e0e0; }
 
     .legend span { margin-right:10px; padding:4px 8px; }
@@ -32,7 +42,7 @@
   <span style="background:#ffcdd2">一廠</span>
   <span style="background:#c8e6c9">二廠</span>
   <span style="background:#fff59d">一廠+綠園司機</span>
-  <span style="background:#bbdefb">二廠+綠園司機</span> <!-- 🔵 新增 -->
+  <span style="background:#bbdefb">二廠+綠園司機</span>
   <span style="background:#e0e0e0">廠商自送</span>
 </div>
 
@@ -124,7 +134,6 @@ function getDateText(){
   return `${val}（${w}｜太陽日${dayNum}）`;
 }
 
-// 🔥 即時變色（已支援藍色）
 function updateRowColor(i){
   const rowEl = document.querySelector(`input[data-index='${i}']`).closest('tr');
   const row = data[i];
@@ -142,7 +151,7 @@ function updateRowColor(i){
   if(f === '一廠' && l === '綠園司機'){
     cls = 'greenDriverFactory1';
   }else if(f === '二廠' && l === '綠園司機'){
-    cls = 'factory2Green'; // 🔵
+    cls = 'factory2Green';
   }else if(f === '一廠'){
     cls = 'factory1';
   }else{
@@ -243,7 +252,7 @@ function renderTable(){
     }
 
     if(f==='一廠'&&l==='綠園司機') cls='greenDriverFactory1';
-    else if(f==='二廠'&&l==='綠園司機') cls='factory2Green'; // 🔵
+    else if(f==='二廠'&&l==='綠園司機') cls='factory2Green';
     else if(f==='一廠') cls='factory1';
     else cls='factory2';
 
