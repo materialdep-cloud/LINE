@@ -17,21 +17,10 @@
     .factory1 { background: #ffcdd2; }
     .factory2 { background: #c8e6c9; }
     .greenDriverFactory1 { background: #fff59d; }
-    .factory2Green { background: #bbdefb; }
+    .factory2Green { background: #bbdefb; } /* 🔵 新增 */
     .selfsend { background: #e0e0e0; }
 
     .legend span { margin-right:10px; padding:4px 8px; }
-
-    /* 🔥 放大上傳按鈕 */
-    #upload {
-      margin-top: 10px;
-      font-size: 18px;
-      padding: 10px;
-      border: 2px dashed #999;
-      border-radius: 8px;
-      background: #fafafa;
-      cursor: pointer;
-    }
   </style>
 </head>
 
@@ -43,7 +32,7 @@
   <span style="background:#ffcdd2">一廠</span>
   <span style="background:#c8e6c9">二廠</span>
   <span style="background:#fff59d">一廠+綠園司機</span>
-  <span style="background:#bbdefb">二廠+綠園司機</span>
+  <span style="background:#bbdefb">二廠+綠園司機</span> <!-- 🔵 新增 -->
   <span style="background:#e0e0e0">廠商自送</span>
 </div>
 
@@ -53,11 +42,6 @@
 </div>
 
 <div>🔍 搜尋：<input type="text" id="search" oninput="renderTable()"></div>
-
-<!-- 🔥 開頁提示 -->
-<div id="uploadHint" style="margin-top:15px; font-size:18px; color:#666;">
-  👉 請上傳Excel檔
-</div>
 
 <input type="file" id="upload" accept=".xlsx,.xls" />
 
@@ -140,6 +124,7 @@ function getDateText(){
   return `${val}（${w}｜太陽日${dayNum}）`;
 }
 
+// 🔥 即時變色（已支援藍色）
 function updateRowColor(i){
   const rowEl = document.querySelector(`input[data-index='${i}']`).closest('tr');
   const row = data[i];
@@ -157,7 +142,7 @@ function updateRowColor(i){
   if(f === '一廠' && l === '綠園司機'){
     cls = 'greenDriverFactory1';
   }else if(f === '二廠' && l === '綠園司機'){
-    cls = 'factory2Green';
+    cls = 'factory2Green'; // 🔵
   }else if(f === '一廠'){
     cls = 'factory1';
   }else{
@@ -181,9 +166,6 @@ upload.onchange = e=>{
   r.onload = e=>{
     const wb = XLSX.read(e.target.result,{type:'binary'});
     const raw = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1});
-
-    // 🔥 隱藏提示
-    document.getElementById('uploadHint').style.display = 'none';
 
     const row4 = raw[3] || [];
     excelDate = '';
@@ -224,8 +206,125 @@ upload.onchange = e=>{
   r.readAsBinaryString(e.target.files[0]);
 };
 
-function renderTable(){ /* 原本完全不動 */ }
-function generateText(){ /* 原本完全不動 */ }
+function renderTable(){
+  const keyword = search.value.trim();
+  table.innerHTML='<tr><th>廠區</th><th>物流</th><th>選擇</th><th>品名</th><th>件數</th><th>備註</th></tr>';
+
+  data.forEach((row,i)=>{
+    if(keyword && !row.品名.includes(keyword)) return;
+
+    let f='二廠', l='阿駿物流';
+
+    if(
+      row.品名.includes('代運') ||
+      row.備註.includes('直達') ||
+      row.備註.includes('派車給綠園司機')
+    ){
+      f='一廠'; l='綠園司機';
+    }
+    else if(specialItems.some(x=>row.品名.includes(x))){
+      f='一廠'; l='阿駿物流';
+    }
+
+    let cls='';
+
+    if(isSelfSend(row)){
+      cls='selfsend';
+      table.innerHTML+=`
+      <tr class="${cls}">
+        <td>-</td>
+        <td>廠商自送</td>
+        <td><input type="checkbox" data-index="${i}" checked></td>
+        <td>${row.品名}</td>
+        <td>${row.件數}</td>
+        <td>${row.備註}</td>
+      </tr>`;
+      return;
+    }
+
+    if(f==='一廠'&&l==='綠園司機') cls='greenDriverFactory1';
+    else if(f==='二廠'&&l==='綠園司機') cls='factory2Green'; // 🔵
+    else if(f==='一廠') cls='factory1';
+    else cls='factory2';
+
+    table.innerHTML+=`
+    <tr class="${cls}">
+      <td><select data-factory="${i}" onchange="updateRowColor(${i})">
+        <option ${f==='一廠'?'selected':''}>一廠</option>
+        <option ${f==='二廠'?'selected':''}>二廠</option>
+      </select></td>
+      <td><select data-logistics="${i}" onchange="updateRowColor(${i})">
+        <option ${l==='阿駿物流'?'selected':''}>阿駿物流</option>
+        <option ${l==='綠園司機'?'selected':''}>綠園司機</option>
+      </select></td>
+      <td><input type="checkbox" data-index="${i}" checked></td>
+      <td>${row.品名}</td>
+      <td>${row.件數}</td>
+      <td>${row.備註}</td>
+    </tr>`;
+  });
+}
+
+function generateText(){
+  const checked=document.querySelectorAll('input[type=checkbox]:checked');
+
+  let groups={
+    '綠園司機':{一廠:[],二廠:[],直達:[],代運:[]},
+    '阿駿物流':{一廠:[],二廠:[],直達:[],代運:[]},
+    '自送':[]
+  };
+
+  checked.forEach(cb=>{
+    const i=cb.dataset.index;
+    const row=data[i];
+
+    if(isSelfSend(row)){
+      groups['自送'].push(`${row.品名}-${row.件數}`);
+      return;
+    }
+
+    const f=document.querySelector(`[data-factory='${i}']`).value;
+    const l=document.querySelector(`[data-logistics='${i}']`).value;
+
+    if(row.品名.includes('代運')){
+      groups[l].代運.push(`${row.品名}-${row.件數}`);
+    }
+    else if(row.備註.includes('直達')){
+      groups[l].直達.push(`${row.品名}-${row.件數}`);
+    }
+    else{
+      groups[l][f].push(`${row.品名}-${row.件數}`);
+    }
+  });
+
+  const makeText=(name,g)=>{
+    let t=getDateText()+'\n'+name+'\n';
+
+    let sections=[];
+    if(g.一廠.length) sections.push(['一廠',g.一廠]);
+    if(g.二廠.length) sections.push(['二廠',g.二廠]);
+    if(g.直達.length) sections.push(['直達',g.直達]);
+    if(g.代運.length) sections.push(['代運',g.代運]);
+
+    sections.forEach((s,i)=>{
+      t+=s[0]+'\n'+s[1].join('\n');
+      if(i!==sections.length-1) t+='\n-----\n';
+    });
+
+    return t.trim();
+  };
+
+  greenOutput.value = makeText('綠園司機',groups['綠園司機']);
+  ajunOutput.value = makeText('阿駿物流',groups['阿駿物流']);
+
+  if(groups['自送'].length){
+    selfOutput.value =
+      getDateText()+'\n廠商自送\n'+
+      groups['自送'].join('\n');
+  }else{
+    selfOutput.value = '';
+  }
+}
 
 function copyText(id){
   const el=document.getElementById(id);
