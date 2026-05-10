@@ -328,7 +328,14 @@ function generateText(){
         }
       });
 
-      t += s[0] + '\n' + normal.join('\n');
+       const formattedNormal = normal.map((item, idx) => {
+       if(item.startsWith('收') && idx !== 0){
+       return '-----\n' + item;
+       }
+       return item;
+       });
+
+      t += s[0] + '\n' + formattedNormal.join('\n');
 
       if(gift.length){
         t += '\n\n-----\n贈品 \n' + gift.join('\n');
