@@ -207,7 +207,6 @@ upload.onchange = e => {
     let headerRowIndex = -1;
     let colMap = { name: -1, count: -1, note: -1 };
 
-    // 1. 尋找標題行「客戶商品名稱」
     for (let i = 0; i < raw.length; i++) {
       const row = raw[i];
       const nameIdx = row.findIndex(cell => String(cell || '').includes('客戶商品名稱'));
@@ -225,12 +224,10 @@ upload.onchange = e => {
       return;
     }
 
-    // 2. 在標題行上方搜尋日期
     excelDate = '';
     const dateRow = raw[headerRowIndex - 1] || [];
     for (let cell of dateRow) {
       if (!cell) continue;
-      // 處理 Excel 數值日期
       if (typeof cell === 'number') {
         const d = XLSX.SSF.parse_date_code(cell);
         if (d) {
@@ -238,7 +235,6 @@ upload.onchange = e => {
           break;
         }
       }
-      // 處理字串日期
       if (typeof cell === 'string') {
         const match = cell.match(/\d{4}\/\d{1,2}\/\d{1,2}/);
         if (match) {
@@ -253,7 +249,6 @@ upload.onchange = e => {
       updateDateInfo();
     }
 
-    // 3. 從標題行下一行開始抓取資料
     data = raw.slice(headerRowIndex + 1)
       .map(r => ({
         品名: (r[colMap.name] || '').toString().trim(),
@@ -278,7 +273,13 @@ function renderTable(){
     let f = '二廠', l = '阿駿物流';
 
     // 自動判斷邏輯
-    if (row.品名.includes('代運') || row.備註.includes('直達') || row.備註.includes('派車給綠園司機')) {
+    // 增加：如果品名包含「美國蘿美心400g/袋」，預設為一廠+綠園司機
+    if (
+      row.品名.includes('美國蘿美心400g/袋') ||
+      row.品名.includes('代運') || 
+      row.備註.includes('直達') || 
+      row.備註.includes('派車給綠園司機')
+    ) {
       f = '一廠'; l = '綠園司機';
     } else if (specialItems.some(x => row.品名.includes(x))) {
       f = '一廠'; l = '阿駿物流';
@@ -385,7 +386,6 @@ function copyText(id){
   if(!el.value) return;
   el.select();
   document.execCommand('copy');
-  // 自定義提示訊息
   const btn = event.target;
   const originalText = btn.innerText;
   btn.innerText = "✅ 已複製";
