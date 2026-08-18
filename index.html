@@ -339,6 +339,28 @@ function generateText(){
     const f = document.querySelector(`[data-factory='${i}']`).value;
     const l = document.querySelector(`[data-logistics='${i}']`).value;
 
+    // 判斷備註中是否有部分直達數量（例如："30件直達" 或 "直達30件"）
+    const match = (row.備註 || '').match(/(\d+)\s*件?\s*直達|直達\s*(\d+)\s*件?/);
+    const totalQty = parseInt(row.件數, 10);
+
+    if (match && !isNaN(totalQty)) {
+      const directQty = parseInt(match[1] || match[2], 10);
+      if (!isNaN(directQty) && directQty > 0) {
+        if (totalQty > directQty) {
+          const remainingQty = totalQty - directQty;
+          // 剩餘件數歸入指定廠區
+          groups[l][f].push(`${row.品名}-${remainingQty}`);
+          // 指定件數歸入直達
+          groups[l].直達.push(`${row.品名}-${directQty}`);
+          return;
+        } else {
+          // 若直達數量大於等於總數量，全數入直達
+          groups[l].直達.push(`${row.品名}-${totalQty}`);
+          return;
+        }
+      }
+    }
+
     if (row.品名.includes('代運')) {
       groups[l].代運.push(`${row.品名}-${row.件數}`);
     } else if (row.備註.includes('直達')) {
