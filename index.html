@@ -336,12 +336,19 @@ function generateText(){
       return;
     }
 
-    const f = document.querySelector(`[data-factory='${i}']`).value;
-    const l = document.querySelector(`[data-logistics='${i}']`).value;
+    const factoryEl = document.querySelector(`[data-factory='${i}']`);
+    const logisticsEl = document.querySelector(`[data-logistics='${i}']`);
 
-    // 判斷備註中是否有部分直達數量（例如："30件直達" 或 "直達30件"）
-    const match = (row.備註 || '').match(/(\d+)\s*件?\s*直達|直達\s*(\d+)\s*件?/);
+    const f = factoryEl ? factoryEl.value : '一廠';
+    const l = logisticsEl ? logisticsEl.value : '綠園司機';
+
     const totalQty = parseInt(row.件數, 10);
+
+    // 先過濾備註中的日期格式 (如 8/18, 2026/08/18)，避免日期數字被誤判為件數
+    const cleanNote = (row.備註 || '').replace(/\d+[\/\-]\d+([\/\-]\d+)?/g, '');
+    
+    // 精準匹配部分直達數量 (如 "30件直達", "30箱直達", "直達30件")
+    const match = cleanNote.match(/(\d+)\s*(?:件|箱)?\s*直達|直達\s*(\d+)\s*(?:件|箱)?/);
 
     if (match && !isNaN(totalQty)) {
       const directQty = parseInt(match[1] || match[2], 10);
@@ -361,6 +368,7 @@ function generateText(){
       }
     }
 
+    // 若無寫明部分直達件數，則依原備註完整判斷
     if (row.品名.includes('代運')) {
       groups[l].代運.push(`${row.品名}-${row.件數}`);
     } else if (row.備註.includes('直達')) {
